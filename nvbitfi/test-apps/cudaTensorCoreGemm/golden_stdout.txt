@@ -1,5 +1,0 @@
-Size 4096 elements 16777216
-GPU Device 0: "TITAN V" with compute capability 7.0
-
-gold generated 
-Time: 33.919136 ms
