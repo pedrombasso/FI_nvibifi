@@ -1,0 +1,4 @@
+Device 0 (TITAN V) is being used
+memory: 11.7546 GB ECC off 80 SMs x1455000
+#CTAs=10, nreps=10, threads/CTA=1024
+global sum = 102400 

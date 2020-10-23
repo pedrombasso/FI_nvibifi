@@ -1,0 +1,3 @@
+App	IGID	Injection Model	Num Jobs	Total Runtime	Total Runtime without Timeouts
+cudaTensorCoreGemm	gp	FLIP_SINGLE_BIT	243	3920.23697	3920.23697
+	
