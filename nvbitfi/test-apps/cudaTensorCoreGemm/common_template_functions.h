@@ -43,8 +43,8 @@ static std::ostream& operator<<(std::ostream& os, const dim3 d) {
 }
 
 template<typename T>
-bool read_from_file(std::string& path, std::vector<T>& array) {
-	std::ifstream input(path, std::ios::binary);
+bool read_from_file(std::vector<T>& array) {
+	std::ifstream input(PATH, std::ios::binary);
 	if (input.good()) {
 		input.read(CHAR_CAST(array.data()), array.size() * sizeof(T));
 		input.close();
@@ -109,8 +109,8 @@ static bool exists(std::string& path) {
 
 template<typename real_t>
 void read_gold(std::vector<real_t>& d_vector) {
-	if (read_from_file(PATH, d_vector) == false) {
-		print("gold can't not be read\n");
+	if (read_from_file(d_vector) == false) {
+		//print("gold can't not be read\n");
 	}
 }
 
