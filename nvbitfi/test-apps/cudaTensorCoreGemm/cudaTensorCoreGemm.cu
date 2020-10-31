@@ -472,7 +472,7 @@ int main(int argc, char **argv){
         std::cout << std::setprecision(5) << std::fixed;
 
         auto errors = std::pair<int, int>();
-        errors = check_output_errors_dmr<half,half>(gold_host,d_host,
+        errors = check_output_errors_dmr(gold_host,d_host,
                 c_host, parameters, threshold,
                0);
 

@@ -162,9 +162,9 @@ static float fabs(half h) {
 // }
 
 
-template<class half_t, class real_t>
-std::pair<int, int> check_output_errors_dmr(std::vector<real_t>& gold,
-		std::vector<real_t>& real_vector, std::vector<half_t>& half_vector,
+// template<class half_t, class real_t>
+std::pair<int, int> check_output_errors_dmr(std::vector<half>& gold,
+		std::vector<half>& real_vector, std::vector<half>& half_vector,
 		Parameters& parameter, const uint32_t threshold, const bool dmr) {
 	uint32_t host_errors = 0;
 
@@ -173,8 +173,8 @@ std::pair<int, int> check_output_errors_dmr(std::vector<real_t>& gold,
 #endif
 	for (size_t i = 0; i < gold.size(); i++) {
 		auto gold_value = gold[i];
-		real_t full_precision = real_vector[i];
-		half_t half_precision = (dmr == true) ? half_vector[i] : real_vector[i];
+		half full_precision = real_vector[i];
+		half half_precision = (dmr == true) ? half_vector[i] : real_vector[i];
 
 		//Check if DMR is OK
 		
