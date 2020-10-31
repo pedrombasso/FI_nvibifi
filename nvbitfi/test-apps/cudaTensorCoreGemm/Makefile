@@ -108,19 +108,19 @@ CFLAGS+= -DNVCCOPTFLAGS="$(strip $(patsubst %-Xptxas,%,$(NVCCOPTFLAGS)))"
 all: obj $(TARGET)
 
 $(TARGET): $(OBJS)
-    $(CXX) $(COMMON) $(CFLAGS) $^ $(INCLUDE) -o $@  $(LDFLAGS)  
+	$(CXX) $(COMMON) $(CFLAGS) $^ $(INCLUDE) -o $@  $(LDFLAGS)  
 
 $(OBJDIR)%.o: %.cpp $(DEPS)
-    $(CXX) $(COMMON) $(CFLAGS) -c $< -o $@ $(INCLUDE) 
+	$(CXX) $(COMMON) $(CFLAGS) -c $< -o $@ $(INCLUDE) 
 
 $(OBJDIR)%.o: %.cu $(DEPS)
-    $(NVCC) -ccbin $(CXX) $(ARCH) $(COMMON) $(NVCCFLAGS) $(INCLUDE) -c $< -o $@ 
+	$(NVCC) -ccbin $(CXX) $(ARCH) $(COMMON) $(NVCCFLAGS) $(INCLUDE) -c $< -o $@ 
 
 
 obj:
-    mkdir -p obj
+	mkdir -p obj
 
 
 .PHONY: clean
 clean:
-    rm -rf $(OBJS) $(TARGET)
+	rm -rf $(OBJS) $(TARGET)
