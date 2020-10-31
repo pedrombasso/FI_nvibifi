@@ -465,17 +465,18 @@ int main(int argc, char **argv){
 
     printf("Kernel execution time: %f ms\n", milliseconds);   
 
-    read_gold(gold_host);
-    std::cout << "Starting the comparing process...\n";
-    std::cout << std::setprecision(5) << std::fixed;
+    if (!GOLD){
+        read_gold<half>(gold_host);
+        std::cout << "Starting the comparing process...\n";
+        std::cout << std::setprecision(5) << std::fixed;
 
-    auto errors = std::pair<int, int>();
-    errors = check_output_errors_dmr<half,half>(gold_host, d_host,
-            c_host, parameters, 0,
-           DMR);
+        auto errors = std::pair<int, int>();
+        errors = check_output_errors_dmr<half,half>(gold_host, d_host,
+                c_host, parameters, 0,
+               DMR);
 
-    std::cout << "#ERRORS" << errors << std::endl; 
-    
+        // std::cout << "#ERRORS" << errors << std::endl; 
+    }
     
         
   

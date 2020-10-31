@@ -16,6 +16,7 @@
 #include <cassert>
 
 #include "device_functions.h"
+#include "Parameters.h"
 
 #ifdef OMP
 #include <omp.h>
@@ -109,24 +110,24 @@ static bool exists(std::string& path) {
 template<typename real_t>
 void read_gold(std::vector<real_t>& d_vector) {
 	if (read_from_file(PATH, d_vector) == false) {
-		throw_line(PATH + " could not be read\n");
+		print("gold can't not be read\n");
 	}
 }
 
 
-static unsigned long long dmr_errors() {
-	unsigned long long ret = 0;
-	rad::checkFrameworkErrors(
-			cudaMemcpyFromSymbol(&ret, errors, sizeof(unsigned long long), 0,
-					cudaMemcpyDeviceToHost));
+// static unsigned long long dmr_errors() {
+// 	unsigned long long ret = 0;
+// 	rad::checkFrameworkErrors(
+// 			cudaMemcpyFromSymbol(&ret, errors, sizeof(unsigned long long), 0,
+// 					cudaMemcpyDeviceToHost));
 
-	unsigned long long tmp = 0;
-	rad::checkFrameworkErrors(
-			cudaMemcpyToSymbol(errors, &tmp, sizeof(unsigned long long), 0,
-					cudaMemcpyHostToDevice));
+// 	unsigned long long tmp = 0;
+// 	rad::checkFrameworkErrors(
+// 			cudaMemcpyToSymbol(errors, &tmp, sizeof(unsigned long long), 0,
+// 					cudaMemcpyHostToDevice));
 
-	return ret;
-}
+// 	return ret;
+// }
 
 template<typename real_t>
 bool equals(real_t& lhs, real_t& rhs, const uint32_t threshold = 0) {
@@ -146,19 +147,19 @@ static float fabs(half h) {
 	return fabs(float(h));
 }
 
-static bool equals(float& lhs, double& rhs, const uint32_t threshold) {
-	assert(sizeof(float) == sizeof(uint32_t));
+// static bool equals(float& lhs, double& rhs, const uint32_t threshold) {
+// 	assert(sizeof(float) == sizeof(uint32_t));
 
-	float rhs_float = float(rhs);
+// 	float rhs_float = float(rhs);
 
-	uint32_t lhs_data;
-	uint32_t rhs_data;
-	memcpy(&lhs_data, &lhs, sizeof(uint32_t));
-	memcpy(&rhs_data, &rhs_float, sizeof(uint32_t));
-	auto diff = SUB_ABS(lhs_data, rhs_data);
+// 	uint32_t lhs_data;
+// 	uint32_t rhs_data;
+// 	memcpy(&lhs_data, &lhs, sizeof(uint32_t));
+// 	memcpy(&rhs_data, &rhs_float, sizeof(uint32_t));
+// 	auto diff = SUB_ABS(lhs_data, rhs_data);
 
-	return (diff <= threshold);
-}
+// 	return (diff <= threshold);
+// }
 
 
 template<class half_t, class real_t>
