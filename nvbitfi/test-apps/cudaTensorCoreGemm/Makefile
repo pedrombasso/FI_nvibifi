@@ -1,316 +1,127 @@
-################################################################################
-#
-# Copyright 1993-2015 NVIDIA Corporation.  All rights reserved.
-#
-# NOTICE TO USER:
-#
-# This source code is subject to NVIDIA ownership rights under U.S. and
-# international Copyright laws.
-#
-# NVIDIA MAKES NO REPRESENTATION ABOUT THE SUITABILITY OF THIS SOURCE
-# CODE FOR ANY PURPOSE.  IT IS PROVIDED "AS IS" WITHOUT EXPRESS OR
-# IMPLIED WARRANTY OF ANY KIND.  NVIDIA DISCLAIMS ALL WARRANTIES WITH
-# REGARD TO THIS SOURCE CODE, INCLUDING ALL IMPLIED WARRANTIES OF
-# MERCHANTABILITY, NONINFRINGEMENT, AND FITNESS FOR A PARTICULAR PURPOSE.
-# IN NO EVENT SHALL NVIDIA BE LIABLE FOR ANY SPECIAL, INDIRECT, INCIDENTAL,
-# OR CONSEQUENTIAL DAMAGES, OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
-# OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
-# OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE
-# OR PERFORMANCE OF THIS SOURCE CODE.
-#
-# U.S. Government End Users.  This source code is a "commercial item" as
-# that term is defined at 48 C.F.R. 2.101 (OCT 1995), consisting  of
-# "commercial computer software" and "commercial computer software
-# documentation" as such terms are used in 48 C.F.R. 12.212 (SEPT 1995)
-# and is provided to the U.S. Government only as a commercial end item.
-# Consistent with 48 C.F.R.12.212 and 48 C.F.R. 227.7202-1 through
-# 227.7202-4 (JUNE 1995), all U.S. Government End Users acquire the
-# source code with only those rights set forth herein.
-#
-################################################################################
-#
-# Makefile project only supported on Mac OS X and Linux Platforms)
-#
-################################################################################
+GPU=1
+DEBUG=0
+#for radiation setup
+LOGS=1
+OMP=1
 
-# Location of the CUDA Toolkit
-CUDA_PATH ?= /usr/local/cuda
+ALPHA=1.0
+BETA=0.0
+SIZE?=4096
+ITERATIONS=10
+PRECISION=float
+CUBLAS=1
+TENSOR_CORES=0
+DMR=none
+BUILDRELATIVEERROR=0
+CHECKBLOCK=1
 
-##############################
-# start deprecated interface #
-##############################
-ifeq ($(x86_64),1)
-    $(info WARNING - x86_64 variable has been deprecated)
-    $(info WARNING - please use TARGET_ARCH=x86_64 instead)
-    TARGET_ARCH ?= x86_64
-endif
-ifeq ($(ARMv7),1)
-    $(info WARNING - ARMv7 variable has been deprecated)
-    $(info WARNING - please use TARGET_ARCH=armv7l instead)
-    TARGET_ARCH ?= armv7l
-endif
-ifeq ($(aarch64),1)
-    $(info WARNING - aarch64 variable has been deprecated)
-    $(info WARNING - please use TARGET_ARCH=aarch64 instead)
-    TARGET_ARCH ?= aarch64
-endif
-ifeq ($(ppc64le),1)
-    $(info WARNING - ppc64le variable has been deprecated)
-    $(info WARNING - please use TARGET_ARCH=ppc64le instead)
-    TARGET_ARCH ?= ppc64le
-endif
-ifneq ($(GCC),)
-    $(info WARNING - GCC variable has been deprecated)
-    $(info WARNING - please use HOST_COMPILER=$(GCC) instead)
-    HOST_COMPILER ?= $(GCC)
-endif
-ifneq ($(abi),)
-    $(error ERROR - abi variable has been removed)
-endif
-############################
-# end deprecated interface #
-############################
+OUTPUTPREFIX=$(PRECISION)_$(ALPHA)_$(BETA)_$(SIZE)_cublas_$(CUBLAS)_tensor_$(TENSOR_CORES).matrix
 
-# architecture
-HOST_ARCH   := $(shell uname -m)
-TARGET_ARCH ?= $(HOST_ARCH)
-ifneq (,$(filter $(TARGET_ARCH),x86_64 aarch64 ppc64le armv7l))
-    ifneq ($(TARGET_ARCH),$(HOST_ARCH))
-        ifneq (,$(filter $(TARGET_ARCH),x86_64 aarch64 ppc64le))
-            TARGET_SIZE := 64
-        else ifneq (,$(filter $(TARGET_ARCH),armv7l))
-            TARGET_SIZE := 32
-        endif
-    else
-        TARGET_SIZE := $(shell getconf LONG_BIT)
-    endif
+# NVCC optmizations flags
+NVCCOPTFLAGS?=
+
+# This is what I use, uncomment if you know your arch and want to specify
+# Kepler
+ARCH=-gencode arch=compute_35,code=[sm_35,compute_35]
+
+# check for cuda 7.0 or lower
+ifneq (, $(findstring cuda-7.0, $(CUDAPATH)))
 else
-    $(error ERROR - unsupported value $(TARGET_ARCH) for TARGET_ARCH!)
-endif
-ifneq ($(TARGET_ARCH),$(HOST_ARCH))
-    ifeq (,$(filter $(HOST_ARCH)-$(TARGET_ARCH),aarch64-armv7l x86_64-armv7l x86_64-aarch64 x86_64-ppc64le))
-        $(error ERROR - cross compiling from $(HOST_ARCH) to $(TARGET_ARCH) is not supported!)
-    endif
-endif
-
-# When on native aarch64 system with userspace of 32-bit, change TARGET_ARCH to armv7l
-ifeq ($(HOST_ARCH)-$(TARGET_ARCH)-$(TARGET_SIZE),aarch64-aarch64-32)
-    TARGET_ARCH = armv7l
+# Titan X | Titan Xp
+#ARCH+=     -gencode arch=compute_61,code=[sm_61,compute_61]
+# Tegra X2
+#ARCH+=     -gencode arch=compute_62,code=[sm_62,compute_62]
+# Titan V | Tesla V100
+ARCH+=  -gencode arch=compute_70,code=[sm_70,compute_70]
+# Xavier
+#ARCH+= -gencode arch=compute_72,code=[sm_72,compute_72]
 endif
 
-# operating system
-HOST_OS   := $(shell uname -s 2>/dev/null | tr "[:upper:]" "[:lower:]")
-TARGET_OS ?= $(HOST_OS)
-ifeq (,$(filter $(TARGET_OS),linux darwin qnx android))
-    $(error ERROR - unsupported value $(TARGET_OS) for TARGET_OS!)
+VPATH=./src/
+TARGET=cudaTensorCoreGemm
+OBJDIR=./obj/
+
+CXX=g++
+
+CUDAPATH=/usr/local/cuda
+NVCC=$(CUDAPATH)/bin/nvcc 
+OPTS=-O3
+LDFLAGS= 
+COMMON= 
+CFLAGS= -Wall -Wfatal-errors
+
+RAD_DIR=/home/carol/radiation-benchmarks
+
+INCLUDE=-I$(CUDAPATH)/include -I../common
+
+
+ifeq ($(CUBLAS), 1)
+USECUBLAS= --use_cublas
 endif
 
-# host compiler
-ifeq ($(TARGET_OS),darwin)
-    ifeq ($(shell expr `xcodebuild -version | grep -i xcode | awk '{print $$2}' | cut -d'.' -f1` \>= 5),1)
-        HOST_COMPILER ?= clang++
-    endif
-else ifneq ($(TARGET_ARCH),$(HOST_ARCH))
-    ifeq ($(HOST_ARCH)-$(TARGET_ARCH),x86_64-armv7l)
-        ifeq ($(TARGET_OS),linux)
-            HOST_COMPILER ?= arm-linux-gnueabihf-g++
-        else ifeq ($(TARGET_OS),qnx)
-            ifeq ($(QNX_HOST),)
-                $(error ERROR - QNX_HOST must be passed to the QNX host toolchain)
-            endif
-            ifeq ($(QNX_TARGET),)
-                $(error ERROR - QNX_TARGET must be passed to the QNX target toolchain)
-            endif
-            export QNX_HOST
-            export QNX_TARGET
-            HOST_COMPILER ?= $(QNX_HOST)/usr/bin/arm-unknown-nto-qnx6.6.0eabi-g++
-        else ifeq ($(TARGET_OS),android)
-            HOST_COMPILER ?= arm-linux-androideabi-g++
-        endif
-    else ifeq ($(TARGET_ARCH),aarch64)
-        ifeq ($(TARGET_OS), linux)
-            HOST_COMPILER ?= aarch64-linux-gnu-g++
-        else ifeq ($(TARGET_OS),qnx)
-            ifeq ($(QNX_HOST),)
-                $(error ERROR - QNX_HOST must be passed to the QNX host toolchain)
-            endif
-            ifeq ($(QNX_TARGET),)
-                $(error ERROR - QNX_TARGET must be passed to the QNX target toolchain)
-            endif
-            export QNX_HOST
-            export QNX_TARGET
-            HOST_COMPILER ?= $(QNX_HOST)/usr/bin/aarch64-unknown-nto-qnx7.0.0-g++
-        else ifeq ($(TARGET_OS), android)
-            HOST_COMPILER ?= aarch64-linux-android-clang++
-        endif
-    else ifeq ($(TARGET_ARCH),ppc64le)
-        HOST_COMPILER ?= powerpc64le-linux-gnu-g++
-    endif
-endif
-HOST_COMPILER ?= g++
-NVCC          := $(CUDA_PATH)/bin/nvcc -ccbin $(HOST_COMPILER)
-
-# internal flags
-NVCCFLAGS   := -m${TARGET_SIZE}
-CCFLAGS     :=
-LDFLAGS     :=
-
-# build flags
-ifeq ($(TARGET_OS),darwin)
-    LDFLAGS += -rpath $(CUDA_PATH)/lib
-    CCFLAGS += -arch $(HOST_ARCH)
-else ifeq ($(HOST_ARCH)-$(TARGET_ARCH)-$(TARGET_OS),x86_64-armv7l-linux)
-    LDFLAGS += --dynamic-linker=/lib/ld-linux-armhf.so.3
-    CCFLAGS += -mfloat-abi=hard
-else ifeq ($(TARGET_OS),android)
-    LDFLAGS += -pie
-    CCFLAGS += -fpie -fpic -fexceptions
+ifeq ($(TENSOR_CORES), 1)
+USETENSORS= --tensor_cores
 endif
 
-ifneq ($(TARGET_ARCH),$(HOST_ARCH))
-    ifeq ($(TARGET_ARCH)-$(TARGET_OS),armv7l-linux)
-        ifneq ($(TARGET_FS),)
-            GCCVERSIONLTEQ46 := $(shell expr `$(HOST_COMPILER) -dumpversion` \<= 4.6)
-            ifeq ($(GCCVERSIONLTEQ46),1)
-                CCFLAGS += --sysroot=$(TARGET_FS)
-            endif
-            LDFLAGS += --sysroot=$(TARGET_FS)
-            LDFLAGS += -rpath-link=$(TARGET_FS)/lib
-            LDFLAGS += -rpath-link=$(TARGET_FS)/usr/lib
-            LDFLAGS += -rpath-link=$(TARGET_FS)/usr/lib/arm-linux-gnueabihf
-        endif
-    endif
-    ifeq ($(TARGET_ARCH)-$(TARGET_OS),aarch64-linux)
-        ifneq ($(TARGET_FS),)
-            GCCVERSIONLTEQ46 := $(shell expr `$(HOST_COMPILER) -dumpversion` \<= 4.6)
-            ifeq ($(GCCVERSIONLTEQ46),1)
-                CCFLAGS += --sysroot=$(TARGET_FS)
-            endif
-            LDFLAGS += --sysroot=$(TARGET_FS)
-            LDFLAGS += -rpath-link=$(TARGET_FS)/lib -L $(TARGET_FS)/lib
-            LDFLAGS += -rpath-link=$(TARGET_FS)/usr/lib -L $(TARGET_FS)/usr/lib
-            LDFLAGS += -rpath-link=$(TARGET_FS)/usr/lib/aarch64-linux-gnu -L $(TARGET_FS)/usr/lib/aarch64-linux-gnu
-            LDFLAGS += --unresolved-symbols=ignore-in-shared-libs
-            CCFLAGS += -isystem=$(TARGET_FS)/usr/include
-            CCFLAGS += -isystem=$(TARGET_FS)/usr/include/aarch64-linux-gnu
-        endif
-    endif
-    ifeq ($(TARGET_ARCH)-$(TARGET_OS),aarch64-qnx)
-        CCFLAGS += -DWIN_INTERFACE_CUSTOM -I/usr/include/aarch64-qnx-gnu
-        LDFLAGS += -lsocket
-        LDFLAGS += -rpath=/usr/lib/aarch64-qnx-gnu -L/usr/lib/aarch64-qnx-gnu
-    endif
+ifeq ($(DEBUG), 1) 
+OPTS=-O0 -g -DDEBUG
+NVCCFLAGS+= -g -G -DDEBUG
 endif
 
-# Install directory of different arch
-CUDA_INSTALL_TARGET_DIR :=
-ifeq ($(TARGET_ARCH)-$(TARGET_OS),armv7l-linux)
-    CUDA_INSTALL_TARGET_DIR = targets/armv7-linux-gnueabihf/
-else ifeq ($(TARGET_ARCH)-$(TARGET_OS),aarch64-linux)
-    CUDA_INSTALL_TARGET_DIR = targets/aarch64-linux/
-else ifeq ($(TARGET_ARCH)-$(TARGET_OS),armv7l-android)
-    CUDA_INSTALL_TARGET_DIR = targets/armv7-linux-androideabi/
-else ifeq ($(TARGET_ARCH)-$(TARGET_OS),aarch64-android)
-    CUDA_INSTALL_TARGET_DIR = targets/aarch64-linux-androideabi/
-else ifeq ($(TARGET_ARCH)-$(TARGET_OS),armv7l-qnx)
-    CUDA_INSTALL_TARGET_DIR = targets/ARMv7-linux-QNX/
-else ifeq ($(TARGET_ARCH)-$(TARGET_OS),aarch64-qnx)
-    CUDA_INSTALL_TARGET_DIR = targets/aarch64-qnx/
-else ifeq ($(TARGET_ARCH),ppc64le)
-    CUDA_INSTALL_TARGET_DIR = targets/ppc64le-linux/
+ifeq ($(BUILDRELATIVEERROR), 1)
+NVCCFLAGS+= -DBUILDRELATIVEERROR=1
 endif
 
-# Debug build flags
-ifeq ($(dbg),1)
-      NVCCFLAGS += -g -G
-      BUILD_TYPE := debug
-else
-      BUILD_TYPE := release
+CFLAGS+=$(OPTS)
+STDVERSION=--std=c++11
+
+COMMON+= $(STDVERSION)
+
+ifeq ($(GPU), 1) 
+COMMON+= -DGPU -I$(CUDAPATH)/include/
+CFLAGS+= -DGPU
+LDFLAGS+= -L$(CUDAPATH)/lib64 -lcudart -lcurand -lcublas
 endif
 
-ALL_CCFLAGS :=
-ALL_CCFLAGS += $(NVCCFLAGS)
-ALL_CCFLAGS += $(EXTRA_NVCCFLAGS)
-ALL_CCFLAGS += $(addprefix -Xcompiler ,$(CCFLAGS))
-ALL_CCFLAGS += $(addprefix -Xcompiler ,$(EXTRA_CCFLAGS))
-
-SAMPLE_ENABLED := 1
-
-# This sample is not supported on Mac OSX
-ifeq ($(TARGET_OS),darwin)
-  $(info >>> WARNING - cudaTensorCoreGemm is not supported on Mac OSX - waiving sample <<<)
-  SAMPLE_ENABLED := 0
+ifeq ($(OMP), 1) 
+CFLAGS+= -DOMP -fopenmp
 endif
 
-# This sample is not supported on ARMv7
-ifeq ($(TARGET_ARCH),armv7l)
-  $(info >>> WARNING - cudaTensorCoreGemm is not supported on ARMv7 - waiving sample <<<)
-  SAMPLE_ENABLED := 0
+
+OBJ= cudaTensorCoreGemm.o Parameters.o 
+#setup_tensor_cores.o
+
+ifeq ($(LOGS), 1)
+INCLUDE+=-I../../include/
+NVCCFLAGS+= -DLOGS
+CFLAGS+= -DLOGS
+LDFLAGS+= -L../../include/ -lLogHelper -DLOGS=1
 endif
 
-ALL_LDFLAGS :=
-ALL_LDFLAGS += $(ALL_CCFLAGS)
-ALL_LDFLAGS += $(addprefix -Xlinker ,$(LDFLAGS))
-ALL_LDFLAGS += $(addprefix -Xlinker ,$(EXTRA_LDFLAGS))
+OBJS = $(addprefix $(OBJDIR), $(OBJ))
+DEPS = $(wildcard src/*.h) Makefile
 
-# Common includes and paths for CUDA
-INCLUDES  := -I../../Common -I../../common/inc -I./include -I/usr/local/cuda/include -I/usr/local/cuda/samples/common/inc -I$(RAD_DIR)/src/cuda/common/include
-LIBRARIES :=
+NVCCFLAGS+= -Xptxas -v $(NVCCOPTFLAGS)
+CFLAGS+= -DNVCCOPTFLAGS="$(strip $(patsubst %-Xptxas,%,$(NVCCOPTFLAGS)))"
 
-################################################################################
+all: obj $(TARGET)
 
-# Gencode arguments
-SMS ?= 70 75
+$(TARGET): $(OBJS)
+	$(CXX) $(COMMON) $(CFLAGS) $^ $(INCLUDE) -o $@  $(LDFLAGS)  
 
-ifeq ($(SMS),)
-$(info >>> WARNING - no SM architectures have been specified - waiving sample <<<)
-SAMPLE_ENABLED := 0
-endif
+$(OBJDIR)%.o: %.cpp $(DEPS)
+	$(CXX) $(COMMON) $(CFLAGS) -c $< -o $@ $(INCLUDE) 
 
-ifeq ($(GENCODE_FLAGS),)
-# Generate SASS code for each SM architecture listed in $(SMS)
-$(foreach sm,$(SMS),$(eval GENCODE_FLAGS += -gencode arch=compute_$(sm),code=sm_$(sm)))
+$(OBJDIR)%.o: %.cu $(DEPS)
+	$(NVCC) -ccbin $(CXX) $(ARCH) $(COMMON) $(NVCCFLAGS) $(INCLUDE) -c $< -o $@ 
 
-# Generate PTX code from the highest SM architecture in $(SMS) to guarantee forward-compatibility
-HIGHEST_SM := $(lastword $(sort $(SMS)))
-ifneq ($(HIGHEST_SM),)
-GENCODE_FLAGS += -gencode arch=compute_$(HIGHEST_SM),code=compute_$(HIGHEST_SM)
-endif
-endif
 
-ALL_CCFLAGS += -maxrregcount=255
+obj:
+	mkdir -p obj
 
-ifeq ($(SAMPLE_ENABLED),0)
-EXEC ?= @echo "[@]"
-endif
 
-################################################################################
-
-# Target rules
-all: build
-
-build: cudaTensorCoreGemm
-
-check.deps:
-ifeq ($(SAMPLE_ENABLED),0)
-	@echo "Sample will be waived due to the above missing dependencies"
-else
-	@echo "Sample is ready - all dependencies have been met"
-endif
-
-cudaTensorCoreGemm.o:cudaTensorCoreGemm.cu
-	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
-
-cudaTensorCoreGemm: cudaTensorCoreGemm.o
-	$(EXEC) $(NVCC) $(ALL_LDFLAGS) $(GENCODE_FLAGS) -o $@ $+ $(LIBRARIES)
-	$(EXEC) mkdir -p ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)
-	$(EXEC) cp $@ ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)
-
-run: build
-	$(EXEC) ./cudaTensorCoreGemm
-
+.PHONY: clean
 clean:
-	rm -f cudaTensorCoreGemm cudaTensorCoreGemm.o
-	rm -rf ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)/cudaTensorCoreGemm
+	rm -rf $(OBJS) $(TARGET)
 
-clobber: clean
+            

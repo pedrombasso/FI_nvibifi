@@ -12,6 +12,9 @@
 // helper functions and utilities to work with CUDA
 #include <helper_cuda.h>
 #include <helper_functions.h>
+#include "common_template_functions.h"
+#include "Parameters.h"
+
 
 // Externally configurable parameters.
 
@@ -112,7 +115,12 @@
 // nvcuda::wmma::load_matrix_sync.
 #define SKEW_HALF 8
 
-#define PATH "/home/carol/pedro/fi/nvbit_release/tools/nvbitfi/test-apps/cudaTensorCoreGemm/stdout"
+
+
+//generete gold 
+#define GOLD 0
+
+#define DMR 0
 
 #define CHAR_CAST(x) (reinterpret_cast<char*>(x))
 
@@ -365,24 +373,13 @@ __host__ void generate_input_matrices(std::vector<half>& a_vector,
        
 }
 
-
-__host__ bool write_to_file( std::vector<half>& array) {
-  std::ofstream output(PATH, std::ios::binary);
-  if (output.good()) {
-    output.write(CHAR_CAST(array.data()), array.size() * sizeof(half));
-    output.close();
-    return true;
-  }
-  return false;
-}
-
 int main(int argc, char **argv){
     constexpr auto n = M_GLOBAL;
     constexpr auto size = n * n;
     std::cout << "Size " << n << " elements " << size << std::endl;
 
     //host inputs
-    std::vector<half> a_host(size, 0), b_host(size, 0), c_host(size, 0), d_host(size, 0), relError(size, 0), relMinMax(2,0);    
+    std::vector<half> a_host(size, 0), b_host(size, 0), c_host(size, 0), d_host(size, 0), gold_host(size,0), relError(size, 0), relMinMax(2,0);    
     generate_input_matrices (a_host, b_host);
 
 
@@ -391,11 +388,10 @@ int main(int argc, char **argv){
     rad::DeviceVector<half> b = b_host;
     rad::DeviceVector<half> c_s = c_host;
 
-    // rad::DeviceVector<half> a_h = a;
-    // rad::DeviceVector<half> b_h = b;
 
     rad::DeviceVector<half> c_h = c_host;
     rad::DeviceVector<half> d_h = d_host;
+
 
     rad::DeviceVector<half> relErrorDevice = d_host;
     rad::DeviceVector<half> relMinMaxDevice = relMinMax;
@@ -415,6 +411,7 @@ int main(int argc, char **argv){
     cudaDeviceProp deviceProp;
     checkCudaErrors(cudaGetDeviceProperties(&deviceProp, dev));
 
+    Parameters parameters();
       
 
 
@@ -433,6 +430,7 @@ int main(int argc, char **argv){
         M * (BLOCK_ROW_WARPS * WARP_ROW_TILES) * N *
            (BLOCK_COL_WARPS * WARP_COL_TILES) * sizeof(half))
     }; 
+
    checkCudaErrors(cudaFuncSetAttribute(
        compute_gemm, cudaFuncAttributeMaxDynamicSharedMemorySize, SHMEM_SZ));
 
@@ -445,14 +443,18 @@ int main(int argc, char **argv){
     rad::checkFrameworkErrors(cudaDeviceSynchronize());
     rad::checkFrameworkErrors(cudaPeekAtLastError());
     
-    
+    // Device to host 
     d_h.to_vector(d_host);
 
-    if (!write_to_file(d_host)){
-      printf("not possible to write gold!\n");
-    }else{
-      printf("gold generated \n");
-    }  
+    // write gold 
+    if (GOLD){ 
+        if (!write_to_file(d_host)){
+          printf("not possible to write gold!\n");
+        }else{
+          printf("gold generated \n");
+        }  
+    } 
+
 
     checkCudaErrors(cudaEventRecord(stop));
     checkCudaErrors(cudaEventSynchronize(stop));
@@ -461,8 +463,18 @@ int main(int argc, char **argv){
 
     checkCudaErrors(cudaEventElapsedTime(&milliseconds, start, stop));
 
-    printf("Time: %f ms\n", milliseconds);   
+    printf("Kernel execution time: %f ms\n", milliseconds);   
 
+    read_gold(gold_host);
+    std::cout << "Starting the comparing process...\n";
+    std::cout << std::setprecision(5) << std::fixed;
+
+    auto errors = std::pair<int, int>();
+    errors = check_output_errors_dmr<half,half>(gold_host, d_host,
+            c_host, parameters, 0,
+           DMR);
+
+    std::cout << "#ERRORS" << errors << std::endl; 
     
     
         
