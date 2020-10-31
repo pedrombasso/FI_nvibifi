@@ -4,6 +4,19 @@ DEBUG=0
 LOGS=1
 OMP=1
 
+ALPHA=1.0
+BETA=0.0
+SIZE?=4096
+ITERATIONS=10
+PRECISION=float
+CUBLAS=1
+TENSOR_CORES=0
+DMR=none
+BUILDRELATIVEERROR=0
+CHECKBLOCK=1
+
+OUTPUTPREFIX=$(PRECISION)_$(ALPHA)_$(BETA)_$(SIZE)_cublas_$(CUBLAS)_tensor_$(TENSOR_CORES).matrix
+
 # NVCC optmizations flags
 NVCCOPTFLAGS?=
 
@@ -24,6 +37,7 @@ ARCH+= -gencode arch=compute_70,code=[sm_70,compute_70]
 # #ARCH+= -gencode arch=compute_72,code=[sm_72,compute_72]
 # endif
 
+VPATH=./src/
 TARGET=cudaTensorCoreGemm
 OBJDIR=./obj/
 
@@ -38,7 +52,7 @@ CFLAGS= -Wall -Wfatal-errors
 
 RAD_DIR=/home/carol/radiation-benchmarks
 
-INCLUDE=-I$(CUDAPATH)/include -I../common -I/home/carol/radiation-benchmarks/src/include -I../../Common -I$(CUDAPATH)/samples/common/inc -I$(RAD_DIR)/src/cuda/common/
+INCLUDE=-I$(CUDAPATH)/include -I../common -I/home/carol/radiation-benchmarks/src/include -I../../Common -I$(CUDAPATH)/samples/common/inc -I/home/carol/radiation-benchmarks/src/cuda/common/
 
 
 
@@ -75,17 +89,18 @@ CFLAGS+= -DOMP -fopenmp
 endif
 
 
-OBJ= Parameters.o cudaTensorCoreGemm.o
+OBJ= cudaTensorCoreGemm.o Parameters.o 
+#setup_tensor_cores.o
 
 ifeq ($(LOGS), 1)
-INCLUDE+=-I../../include/ 
+INCLUDE+=-I../../include/
 NVCCFLAGS+= -DLOGS
 CFLAGS+= -DLOGS
 LDFLAGS+= -L../../include/ -L$(RAD_DIR)/src/include/ -lLogHelper -DLOGS=1
 endif
 
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
-# DEPS = $(wildcard src/*.h) Makefile
+DEPS = $(wildcard src/*.h) Makefile
 
 NVCCFLAGS+= -Xptxas -v $(NVCCOPTFLAGS)
 CFLAGS+= -DNVCCOPTFLAGS="$(strip $(patsubst %-Xptxas,%,$(NVCCOPTFLAGS)))"
@@ -93,19 +108,19 @@ CFLAGS+= -DNVCCOPTFLAGS="$(strip $(patsubst %-Xptxas,%,$(NVCCOPTFLAGS)))"
 all: obj $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CXX) $(COMMON) $(CFLAGS) $^ $(INCLUDE) -o $@  $(LDFLAGS)  
+    $(CXX) $(COMMON) $(CFLAGS) $^ $(INCLUDE) -o $@  $(LDFLAGS)  
 
-$(OBJDIR)%.o: %.cpp 
-	$(CXX) $(COMMON) $(CFLAGS) -c $< -o $@ $(INCLUDE) 
+$(OBJDIR)%.o: %.cpp $(DEPS)
+    $(CXX) $(COMMON) $(CFLAGS) -c $< -o $@ $(INCLUDE) 
 
-$(OBJDIR)%.o: %.cu 
-	$(NVCC) -ccbin $(CXX) $(ARCH) $(COMMON) $(NVCCFLAGS) $(INCLUDE) -c $< -o $@ 
+$(OBJDIR)%.o: %.cu $(DEPS)
+    $(NVCC) -ccbin $(CXX) $(ARCH) $(COMMON) $(NVCCFLAGS) $(INCLUDE) -c $< -o $@ 
 
 
 obj:
-	mkdir -p obj
+    mkdir -p obj
 
 
 .PHONY: clean
 clean:
-	rm -rf $(OBJS) $(TARGET)
+    rm -rf $(OBJS) $(TARGET)
