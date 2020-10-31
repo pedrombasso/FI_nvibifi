@@ -93,7 +93,7 @@ OBJ= cudaTensorCoreGemm.o Parameters.o
 #setup_tensor_cores.o
 
 ifeq ($(LOGS), 1)
-INCLUDE+=-I../../include/ -I/home/carol/radiation-benchmarks/src/include/   
+INCLUDE+=-I../../include/ 
 NVCCFLAGS+= -DLOGS
 CFLAGS+= -DLOGS
 LDFLAGS+= -L../../include/ -L/home/carol/radiation-benchmarks/src/include/ -lLogHelper -DLOGS=1
