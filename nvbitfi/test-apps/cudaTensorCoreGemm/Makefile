@@ -79,7 +79,7 @@ endif
 OBJ= cudaTensorCoreGemm.o Parameters.o 
 
 ifeq ($(LOGS), 1)
-INCLUDE+=-I../../include/ -I$(RAD_DIR)/include/
+INCLUDE+=-I../../include/ -I$(RAD_DIR)/src/include/
 NVCCFLAGS+= -DLOGS
 CFLAGS+= -DLOGS
 LDFLAGS+= -L../../include/ -lLogHelper -DLOGS=1
