@@ -411,7 +411,7 @@ int main(int argc, char **argv){
     cudaDeviceProp deviceProp;
     checkCudaErrors(cudaGetDeviceProperties(&deviceProp, dev));
 
-    Parameters parameters(argc, argv);
+    Parameters parameters();
       
 
 
