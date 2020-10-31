@@ -52,7 +52,7 @@ CFLAGS= -Wall -Wfatal-errors
 
 RAD_DIR=/home/carol/radiation-benchmarks
 
-INCLUDE=-I$(CUDAPATH)/include -I../common -I/home/carol/radiation-benchmarks/src/include -I../../Common -I$(CUDAPATH)/samples/common/inc
+INCLUDE=-I$(CUDAPATH)/include -I../common -I/home/carol/radiation-benchmarks/src/include -I../../Common -I$(CUDAPATH)/samples/common/inc -I/home/carol/radiation-benchmarks/src/cuda/common/
 
 
 
