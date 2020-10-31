@@ -24,7 +24,6 @@ ARCH+= -gencode arch=compute_70,code=[sm_70,compute_70]
 # #ARCH+= -gencode arch=compute_72,code=[sm_72,compute_72]
 # endif
 
-VPATH=./src/
 TARGET=cudaTensorCoreGemm
 OBJDIR=./obj/
 
@@ -76,7 +75,7 @@ CFLAGS+= -DOMP -fopenmp
 endif
 
 
-OBJ= cudaTensorCoreGemm.o Parameters.o 
+OBJ= Parameters.o cudaTensorCoreGemm.o
 
 ifeq ($(LOGS), 1)
 INCLUDE+=-I../../include/ 
