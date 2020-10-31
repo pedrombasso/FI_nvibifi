@@ -5,8 +5,7 @@
 
 // extern std::string get_multi_compiler_header();
 
-Parameters::Parameters() :
-		{
+Parameters::Parameters(){
 
 // 	// //getting alpha and beta
 // 	// this->alpha = rad::find_float_arg(argc, argv, "--alpha", 1);

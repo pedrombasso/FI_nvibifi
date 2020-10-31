@@ -22,7 +22,7 @@ struct Parameters {
 	friend std::ostream& operator<<(std::ostream& os,
 			const Parameters& log_obj);
 
-	virtual ~Parameters() = default;
+	// virtual ~Parameters() = default;
 
 	void end_iteration();
 
