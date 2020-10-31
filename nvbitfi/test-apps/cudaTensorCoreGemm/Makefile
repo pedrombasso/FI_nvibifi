@@ -4,40 +4,12 @@ DEBUG=0
 LOGS=1
 OMP=1
 
-ALPHA=1.0
-BETA=0.0
-SIZE?=4096
-ITERATIONS=10
-PRECISION=float
-CUBLAS=1
-TENSOR_CORES=0
-DMR=none
-BUILDRELATIVEERROR=0
-CHECKBLOCK=1
-
-OUTPUTPREFIX=$(PRECISION)_$(ALPHA)_$(BETA)_$(SIZE)_cublas_$(CUBLAS)_tensor_$(TENSOR_CORES).matrix
-
 # NVCC optmizations flags
 NVCCOPTFLAGS?=
 
-# This is what I use, uncomment if you know your arch and want to specify
-# Kepler
+# Volta Arch
 ARCH+= -gencode arch=compute_70,code=[sm_70,compute_70]
 
-# # check for cuda 7.0 or lower
-# ifneq (, $(findstring cuda-7.0, $(CUDAPATH)))
-# else
-# # Titan X | Titan Xp
-# #ARCH+=     -gencode arch=compute_61,code=[sm_61,compute_61]
-# # Tegra X2
-# #ARCH+=     -gencode arch=compute_62,code=[sm_62,compute_62]
-# # Titan V | Tesla V100
-# ARCH+=  -gencode arch=compute_70,code=[sm_70,compute_70]
-# # Xavier
-# #ARCH+= -gencode arch=compute_72,code=[sm_72,compute_72]
-# endif
-
-VPATH=./src/
 TARGET=cudaTensorCoreGemm
 OBJDIR=./obj/
 
@@ -52,7 +24,7 @@ CFLAGS= -Wall -Wfatal-errors
 
 RAD_DIR=/home/carol/radiation-benchmarks
 
-INCLUDE=-I$(CUDAPATH)/include -I../common -I/home/carol/radiation-benchmarks/src/include -I../../Common -I$(CUDAPATH)/samples/common/inc -I/home/carol/radiation-benchmarks/src/cuda/common/
+INCLUDE=-I$(CUDAPATH)/include -I../common -I/home/carol/radiation-benchmarks/src/include -I../../Common -I$(CUDAPATH)/samples/common/inc -I$(RAD_DIR)/src/cuda/common/
 
 
 
