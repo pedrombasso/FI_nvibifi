@@ -16,8 +16,8 @@
 
 struct Parameters {
 
-	// Parameters(int argc, char** argv);
-	// Parameters (); 
+	Parameters(int argc, char** argv);
+	
 
 	friend std::ostream& operator<<(std::ostream& os,
 			const Parameters& log_obj);
