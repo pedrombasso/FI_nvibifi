@@ -1,7 +1,7 @@
 #include "include/cuda_utils.h"
 
 #include "Parameters.h"
-#include "common.h"
+// #include "common.h"
 
 // extern std::string get_multi_compiler_header();
 
