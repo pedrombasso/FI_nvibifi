@@ -96,7 +96,7 @@ ifeq ($(LOGS), 1)
 INCLUDE+=-I../../include/ -I/home/carol/radiation-benchmarks/src/include/   
 NVCCFLAGS+= -DLOGS
 CFLAGS+= -DLOGS
-LDFLAGS+= -L../../include/ -lLogHelper -DLOGS=1
+LDFLAGS+= -L../../include/ -L/home/carol/radiation-benchmarks/src/include/ -lLogHelper -DLOGS=1
 endif
 
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
