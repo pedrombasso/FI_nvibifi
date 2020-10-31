@@ -19,8 +19,8 @@ struct Parameters {
 	// Parameters(int argc, char** argv);
 	// Parameters (); 
 
-	// friend std::ostream& operator<<(std::ostream& os,
-	// 		const Parameters& log_obj);
+	friend std::ostream& operator<<(std::ostream& os,
+			const Parameters& log_obj);
 
 	// virtual ~Parameters() = default;
 

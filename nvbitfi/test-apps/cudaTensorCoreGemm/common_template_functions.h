@@ -192,8 +192,8 @@ std::pair<int, int> check_output_errors_dmr(std::vector<half>& gold,
 
 			std::stringstream error_detail("");
 			error_detail << std::setprecision(20) << std::scientific;
-			error_detail << "p: [" << int(floor(i / parameter.size_matrices)) << ", "
-					<< i % parameter.size_matrices << "], r: ";
+			error_detail << "p: [" << int(floor(i / gold.size())) << ", "
+					<< i % gold.size() << "], r: ";
 			error_detail << full_precision;
 			error_detail << ", e: " << gold_value << " smaller_precision: "
 					<< half_precision;
@@ -213,7 +213,9 @@ std::pair<int, int> check_output_errors_dmr(std::vector<half>& gold,
 		}
 	}
 
-	auto dmr_err = dmr_errors();
+	// auto dmr_err = dmr_errors();
+	auto dmr_err = 0;
+
 	if (dmr_err != 0) {
 		std::string error_detail;
 		error_detail = "detected_dmr_errors: " + std::to_string(dmr_err);
