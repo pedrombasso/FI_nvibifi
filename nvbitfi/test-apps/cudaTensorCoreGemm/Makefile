@@ -79,10 +79,10 @@ endif
 OBJ= cudaTensorCoreGemm.o Parameters.o 
 
 ifeq ($(LOGS), 1)
-INCLUDE+=-I../../include/ 
+INCLUDE+=-I../../include/ -I$(RAD_DIR)/include/
 NVCCFLAGS+= -DLOGS
 CFLAGS+= -DLOGS
-LDFLAGS+= -L../../include/ -I$(RAD_DIR)/include/ -lLogHelper -DLOGS=1
+LDFLAGS+= -L../../include/ -lLogHelper -DLOGS=1
 endif
 
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
