@@ -15,7 +15,8 @@
 #include <iomanip>
 #include <cassert>
 
-#include "device_functions.h"
+// #include "device_functions.h"
+#include "cuda_runtime_api.h" 
 #include "Parameters.h"
 
 #ifdef OMP
