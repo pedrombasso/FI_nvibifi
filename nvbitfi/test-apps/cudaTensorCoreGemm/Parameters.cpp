@@ -85,7 +85,7 @@ Parameters::Parameters(){
 //#endif
 //	test_info += " nvcc_optimization_flags: " + opt_flags;
 	std::string app = "gemm_tensor_cores_half"; 
-	this->log = std::make_shared<rad::Log>(app, test_info);
+	this->log = std::make_shared<rad::Log>(app);
 }
 
 std::ostream& operator<<(std::ostream& os, const Parameters& parameter) {
