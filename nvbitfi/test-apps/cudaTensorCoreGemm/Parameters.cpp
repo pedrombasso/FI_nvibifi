@@ -78,14 +78,14 @@ Parameters::Parameters(){
 // 	test_info += " use_cutlass: " + std::to_string(this->use_cutlass);
 
 	// // Info for compiler test
-	// test_info += get_multi_compiler_header();
+	test_info = " nvcc_optimization_flags: ";
 //	std::string opt_flags = "";
 //#ifdef NVCCOPTFLAGS
 //	opt_flags += STRING(NVCCOPTFLAGS);
 //#endif
 //	test_info += " nvcc_optimization_flags: " + opt_flags;
 	std::string app = "gemm_tensor_cores_half"; 
-	this->log = std::make_shared<rad::Log>(app);
+	this->log = std::make_shared<rad::Log>(app, test_info);
 }
 
 // std::ostream& operator<<(std::ostream& os, const Parameters& parameter) {
