@@ -57,7 +57,7 @@ Parameters::Parameters(){
 // 		this->use_cublas = false;
 // 	}
 
-// 	std::string test_info = std::string(" iterations: ")
+	std::string test_info = std::string(" tensor_cores_nvibitfi: ");
 // 			+ std::to_string(this->iterations);
 
 // 	test_info += " precision: " + this->precision;
@@ -78,7 +78,7 @@ Parameters::Parameters(){
 // 	test_info += " use_cutlass: " + std::to_string(this->use_cutlass);
 
 	// // Info for compiler test
-	test_info = " nvcc_optimization_flags: ";
+	// test_info = " nvcc_optimization_flags: ";
 //	std::string opt_flags = "";
 //#ifdef NVCCOPTFLAGS
 //	opt_flags += STRING(NVCCOPTFLAGS);
