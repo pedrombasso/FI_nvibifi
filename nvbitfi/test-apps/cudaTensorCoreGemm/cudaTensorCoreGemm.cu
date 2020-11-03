@@ -467,7 +467,9 @@ int main(int argc, char **argv){
 
     if (!GOLD){
         const uint32_t threshold = 0;
-        read_gold<half>(gold_host);
+        bool is_gold_read;
+        is_gold_read = read_gold<half>(gold_host);
+        if (is_gold_read == true){
         std::cout << "Starting the comparing process...\n";
         std::cout << std::setprecision(5) << std::fixed;
 
@@ -475,6 +477,9 @@ int main(int argc, char **argv){
         errors = check_output_errors_dmr(gold_host,d_host,
                 c_host, parameters, threshold,
                0);
+        } else {
+            printf("gold was not found, exiting....\n");
+        } 
 
         // std::cout << "#ERRORS" << errors << std::endl; 
     }

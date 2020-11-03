@@ -109,10 +109,11 @@ static bool exists(std::string& path) {
 
 
 template<typename real_t>
-void read_gold(std::vector<real_t>& d_vector) {
+bool read_gold(std::vector<real_t>& d_vector) {
 	if (read_from_file(d_vector) == false) {
-		//print("gold can't not be read\n");
+		return false;
 	}
+	return true;
 }
 
 
