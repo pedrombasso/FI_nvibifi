@@ -171,7 +171,7 @@ std::pair<int, int> check_output_errors_dmr(std::vector<half>& gold,
 	uint32_t host_errors = 0;
 
 #ifdef OMP
-#pragma omp parallel for shared(host_errors, memory_errors)
+#pragma omp parallel for shared(host_errors)
 #endif
 	for (size_t i = 0; i < gold.size(); i++) {
 		auto gold_value = gold[i];
@@ -180,7 +180,7 @@ std::pair<int, int> check_output_errors_dmr(std::vector<half>& gold,
 
 		//Check if DMR is OK
 		
-		bool dmr_equals = equals(half_precision, full_precision, threshold);
+		// bool dmr_equals = equals(half_precision, full_precision, threshold);
 
 
 		//Is output corrupted
