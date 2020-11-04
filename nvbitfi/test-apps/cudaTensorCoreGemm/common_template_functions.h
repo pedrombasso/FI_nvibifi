@@ -71,41 +71,27 @@ static bool exists(std::string& path) {
 	return file_exists;
 }
 
-// template<typename half_t, typename real_t>
-// void write_abc_files(
-// 		std::string& a_file_path, std::vector<half_t>& a_vector,
-// 		std::string& b_file_path, std::vector<half_t>& b_vector,
-// 		std::string& c_file_path, std::vector<real_t>& c_vector
-// 		) {
-// 	if (write_to_file(a_file_path, a_vector) == false) {
-// 		throw_line(a_file_path + " could not be written\n");
-// 	}
 
-// 	if (write_to_file(b_file_path, b_vector) == false) {
-// 		throw_line(b_file_path + " could not be written\n");
-// 	}
 
-// 	if (write_to_file(c_file_path, c_vector) == false) {
-// 		throw_line(c_file_path + " could not be written\n");
-// 	}
-// }
 
-// template<typename half_t, typename real_t>
-// void read_abc_files(
-// 		std::string& a_file_path, std::vector<half_t>& a_vector,
-// 		std::string& b_file_path, std::vector<half_t>& b_vector,
-// 		std::string& c_file_path, std::vector<real_t>& c_vector
-// 		) {
-// 	if (read_from_file(a_file_path, a_vector) == false) {
-// 		throw_line(a_file_path + " could not be read\n");
-// 	}
-// 	if (read_from_file(b_file_path, b_vector) == false) {
-// 		throw_line(b_file_path + " could not be read\n");
-// 	}
-// 	if (read_from_file(c_file_path, c_vector) == false) {
-// 		throw_line(c_file_path + " could not be read\n");
-// 	}
-// }
+__host__ void generate_input_matrices(std::vector<half>& a_vector,
+        std::vector<half>& b_vector) {
+
+    std::random_device rd; //Will be used to obtain a seed for the random number engine
+    std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<float> dis(0.1, 1.0);
+    
+    a_vector.resize(M_GLOBAL * M_GLOBAL);
+    b_vector.resize(M_GLOBAL * M_GLOBAL);
+    
+
+    for (int i = 0; i < M_GLOBAL * M_GLOBAL; i++) {
+        a_vector[i]=1.0; //half(dis(gen));
+        b_vector[i]=1.0; //half(dis(gen));
+
+    }    
+       
+}
 
 
 template<typename real_t>
@@ -117,19 +103,6 @@ bool read_gold(std::vector<real_t>& d_vector) {
 }
 
 
-// static unsigned long long dmr_errors() {
-// 	unsigned long long ret = 0;
-// 	rad::checkFrameworkErrors(
-// 			cudaMemcpyFromSymbol(&ret, errors, sizeof(unsigned long long), 0,
-// 					cudaMemcpyDeviceToHost));
-
-// 	unsigned long long tmp = 0;
-// 	rad::checkFrameworkErrors(
-// 			cudaMemcpyToSymbol(errors, &tmp, sizeof(unsigned long long), 0,
-// 					cudaMemcpyHostToDevice));
-
-// 	return ret;
-// }
 
 template<typename real_t>
 bool equals(real_t& lhs, real_t& rhs, const uint32_t threshold = 0) {
@@ -170,6 +143,8 @@ std::pair<int, int> check_output_errors_dmr(std::vector<half>& gold,
 		Parameters& parameter, const uint32_t threshold, const bool dmr) {
 	uint32_t host_errors = 0;
 
+		std::cout << "CHECK D  size == " << real_vector.size() << " CHECK GOLD size == " << gold.size() << std::endl; 
+
 #ifdef OMP
 #pragma omp parallel for shared(host_errors)
 #endif
@@ -198,7 +173,7 @@ std::pair<int, int> check_output_errors_dmr(std::vector<half>& gold,
 					<< i % gold.size() << "], r: ";
 			error_detail << full_precision;
 			error_detail << ", e: " << gold_value << " smaller_precision: "
-					<< half_precision;
+					<< half_precision <<;
 
 			// if (parameter.verbose && (host_errors < 10)) {
 			// 	std::cout << error_detail.str() << std::endl;
