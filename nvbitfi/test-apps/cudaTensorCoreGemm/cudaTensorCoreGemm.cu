@@ -434,7 +434,7 @@ int main(int argc, char **argv){
 
     //host inputs
     std::vector<half> a_host(size, 0), b_host(size, 0), c_host(size, 0), d_host(size, 0), gold_host(size,0), relError(size, 0), relMinMax(2,0);    
-    generate_input_matrices (a_host, b_host);
+    generate_input_matrices (a_host, b_host, n);
 
 
     //device matrices

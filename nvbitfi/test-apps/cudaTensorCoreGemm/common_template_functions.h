@@ -75,17 +75,17 @@ static bool exists(std::string& path) {
 
 
 __host__ void generate_input_matrices(std::vector<half>& a_vector,
-        std::vector<half>& b_vector) {
+        std::vector<half>& b_vector, int size) {
 
     std::random_device rd; //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<float> dis(0.1, 1.0);
     
-    a_vector.resize(M_GLOBAL * M_GLOBAL);
-    b_vector.resize(M_GLOBAL * M_GLOBAL);
+    a_vector.resize(size * size);
+    b_vector.resize(size * size);
     
 
-    for (int i = 0; i < M_GLOBAL * M_GLOBAL; i++) {
+    for (int i = 0; i < size * size; i++) {
         a_vector[i]=1.0; //half(dis(gen));
         b_vector[i]=1.0; //half(dis(gen));
 
@@ -173,7 +173,7 @@ std::pair<int, int> check_output_errors_dmr(std::vector<half>& gold,
 					<< i % gold.size() << "], r: ";
 			error_detail << full_precision;
 			error_detail << ", e: " << gold_value << " smaller_precision: "
-					<< half_precision <<;
+					<< half_precision ;
 
 			// if (parameter.verbose && (host_errors < 10)) {
 			// 	std::cout << error_detail.str() << std::endl;
