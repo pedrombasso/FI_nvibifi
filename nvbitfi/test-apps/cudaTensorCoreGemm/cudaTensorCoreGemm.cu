@@ -366,7 +366,7 @@ __host__ void generate_input_matrices(std::vector<half>& a_vector,
     
 
     for (int i = 0; i < M_GLOBAL * M_GLOBAL; i++) {
-        a_vector[i]=2.0; //half(dis(gen));
+        a_vector[i]=1.0; //half(dis(gen));
         b_vector[i]=2.0; //half(dis(gen));
 
     }    
