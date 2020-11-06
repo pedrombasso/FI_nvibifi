@@ -47,7 +47,7 @@
 
 // GEMM configuration.
 
-#define M_TILES 256 //512 // 128 for 2k, 512 for 8k etc 
+#define M_TILES 256 //512 // 128 for 2k,256, 512 for 8k etc 
 #define N_TILES 256 //512 //
 #define K_TILES 256 //512 //
 
@@ -499,12 +499,14 @@ int main(int argc, char **argv){
    
 
 
-    matrix_mult_kernel_unhardened<<<dim_grid, dim_block,0,stream2>>>(a.data(), b.data(), d_h.data(), half(1.0), half(0.0), n, n);   
+    // matrix_mult_kernel_unhardened<<<dim_grid, dim_block,0,stream2>>>(a.data(), b.data(), d_h.data(), half(1.0), half(0.0), n, n);   
     rad::checkFrameworkErrors(cudaDeviceSynchronize());
     rad::checkFrameworkErrors(cudaPeekAtLastError());
     
     // Device to host 
     d_h.to_vector(d_host);
+
+
 
     // write gold 
     if (GOLD){ 
@@ -530,8 +532,7 @@ int main(int argc, char **argv){
         bool is_gold_read;
         is_gold_read = read_gold<half>(gold_host);
         if (is_gold_read == true){
-        std::cout << "Starting the comparing process...\n";
-         std::cout << "checking D value before comparasion = " << d_host[1] << std::endl;
+        std::cout << "Starting the comparing process...\n";       
         std::cout << std::setprecision(5) << std::fixed;
 
         auto errors = std::pair<int, int>();

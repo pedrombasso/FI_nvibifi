@@ -74,7 +74,7 @@ endif
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
 DEPS = $(wildcard *.h) Makefile
 
-NVCCFLAGS+= -Xptxas -v $(NVCCOPTFLAGS)
+NVCCFLAGS+= $(NVCCOPTFLAGS)
 CFLAGS+= -DNVCCOPTFLAGS="$(strip $(patsubst %-Xptxas,%,$(NVCCOPTFLAGS)))"
 
 all: obj $(TARGET)

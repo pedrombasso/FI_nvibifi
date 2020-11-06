@@ -143,7 +143,7 @@ std::pair<int, int> check_output_errors_dmr(std::vector<half>& gold,
 		Parameters& parameter, const uint32_t threshold, const bool dmr) {
 	uint32_t host_errors = 0;
 
-		std::cout << "CHECK D  size == " << real_vector.size() << " CHECK GOLD size == " << gold.size() << std::endl; 
+	
 
 #ifdef OMP
 #pragma omp parallel for shared(host_errors)
