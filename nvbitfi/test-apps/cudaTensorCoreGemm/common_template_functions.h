@@ -192,33 +192,39 @@ std::pair<int, int> check_output_errors_dmr(std::vector<half>& gold,
 					<< half_precision ;
 
 			
-			
-			if (host_errors < 10) {
-				std::cout << error_detail.str() << std::endl;
+			//Verbose	
+			// if (host_errors < 10) {
+			// 	std::cout << error_detail.str() << std::endl;
 
-				std::cout << is_output_diff << " " << !dmr_equals << std::endl;
-			}
+			// 	std::cout << is_output_diff << " " << !dmr_equals << std::endl;
+			// }
 
 			parameter.log_error(error_detail.str());
 			host_errors++;	
 
 #ifdef OMP
-		}
+			}
 #endif
 		}
 
-	}
-	if (!dmr_equals){
-		std::stringstream error_detail("");
-		std::stringstream error_detail("");
+		if (!dmr_equals){
+#ifdef OMP
+#pragma omp critical
+			{
+#endif				
+			std::stringstream error_detail("");
 			error_detail << std::setprecision(20) << std::scientific;
 			error_detail << "detected_dmr_errors: " ;
 			error_detail << "p: [" << int(floor(i / gold.size())) << ", "
 					<< i % gold.size() << "], TENSOR: ";
 			error_detail << full_precision;
-			error_detail << ", MXM: " << half_precision << " SUB_ABS: " << sub_abs << std::endl;
+			error_detail << ", MXM: " << half_precision << " SUB_ABS: " << sub_abs << std::endl;				
+			
 
-
+#ifdef OMP
+			}
+#endif
+		}
 
 	}
 
