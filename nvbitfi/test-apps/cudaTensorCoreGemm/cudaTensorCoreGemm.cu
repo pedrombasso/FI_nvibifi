@@ -47,9 +47,9 @@
 
 // GEMM configuration.
 
-#define M_TILES 256 //512 // 128 for 2k,256, 512 for 8k etc 
-#define N_TILES 256 //512 //
-#define K_TILES 256 //512 //
+#define M_TILES 32 //16 //256 //512 // 128 for 2k,256, 512 for 8k etc 
+#define N_TILES 32 //16 //256 //512 //
+#define K_TILES 32 //16 //256 //512 //
 
 
 #define M_GLOBAL (M * M_TILES)
@@ -118,11 +118,12 @@
 
 
 //generete gold 
-#define GOLD 0
+#define GOLD 1
 
 #define DMR 0
 
 #define CHAR_CAST(x) (reinterpret_cast<char*>(x))
+#define SUB_ABS(lhs, rhs) ((lhs > rhs) ? (lhs - rhs) : (rhs - lhs))
 
 #define checkKernelErrors(expr)                             \
   do {                                                      \
@@ -433,7 +434,7 @@ int main(int argc, char **argv){
     std::cout << "Size " << n << " elements " << size << std::endl;
 
     //host inputs
-    std::vector<half> a_host(size, 0), b_host(size, 0), c_host(size, 0), d_host(size, 0), gold_host(size,0), relError(size, 0), relMinMax(2,0);    
+    std::vector<half> a_host(size, 0), b_host(size, 0), c_host(size, 0), d_host(size, 0), d2_host(size, 0), gold_host(size,0), relError(size, 0), relMinMax(2,0);    
     generate_input_matrices (a_host, b_host, n);
 
 
@@ -445,6 +446,8 @@ int main(int argc, char **argv){
 
     rad::DeviceVector<half> c_h = c_host;
     rad::DeviceVector<half> d_h = d_host;
+    rad::DeviceVector<half> d2_h = d2_host;
+
 
 
     rad::DeviceVector<half> relErrorDevice = d_host;
@@ -499,12 +502,14 @@ int main(int argc, char **argv){
    
 
 
-    // matrix_mult_kernel_unhardened<<<dim_grid, dim_block,0,stream2>>>(a.data(), b.data(), d_h.data(), half(1.0), half(0.0), n, n);   
+    matrix_mult_kernel_unhardened<<<dim_grid, dim_block,0,stream2>>>(a.data(), b.data(), d2_h.data(), half(1.0), half(0.0), n, n);   
     rad::checkFrameworkErrors(cudaDeviceSynchronize());
     rad::checkFrameworkErrors(cudaPeekAtLastError());
     
     // Device to host 
     d_h.to_vector(d_host);
+    d2_h.to_vector(d2_host);
+
 
 
 
@@ -528,7 +533,7 @@ int main(int argc, char **argv){
     printf("Kernel execution time: %f ms\n", milliseconds);   
 
     if (!GOLD){
-        const uint32_t threshold = 0;
+        const uint16_t threshold = 1;
         bool is_gold_read;
         is_gold_read = read_gold<half>(gold_host);
         if (is_gold_read == true){
@@ -537,12 +542,17 @@ int main(int argc, char **argv){
 
         auto errors = std::pair<int, int>();
         errors = check_output_errors_dmr(gold_host,d_host,
-                c_host, parameters, threshold,
+                d2_host, parameters, threshold,
                0);
         } else {
             printf("gold was not found, exiting....\n");
         } 
 
+       
+      
+       
+
+        // std::cout << "SW ==  " << std::setprecision(20) << d2_host << " hw == " << std::setprecision(20)<< d_host << std::endl;
         // std::cout << "#ERRORS" << errors << std::endl; 
     }
     

@@ -36,6 +36,8 @@ using half = half_float::half;
 #define GENERATOR_MAXABSVALUE_TENSOR 10
 #define GENERATOR_MINABSVALUE_TENSOR -GENERATOR_MAXABSVALUE_TENSOR
 
+#define SUB_ABS(lhs, rhs) ((lhs > rhs) ? (lhs - rhs) : (rhs - lhs))
+
 #define PATH "/home/carol/pedro/fi/nvbit_release/tools/nvbitfi/test-apps/cudaTensorCoreGemm/gold.matrix"
 
 static std::ostream& operator<<(std::ostream& os, const dim3 d) {
@@ -86,8 +88,8 @@ __host__ void generate_input_matrices(std::vector<half>& a_vector,
     
 
     for (int i = 0; i < size * size; i++) {
-        a_vector[i]=1.0; //half(dis(gen));
-        b_vector[i]=1.0; //half(dis(gen));
+        a_vector[i]= 1.0; //half(dis(gen));
+        b_vector[i]= 1.0; //half(dis(gen));
 
     }    
        
@@ -102,16 +104,16 @@ bool read_gold(std::vector<real_t>& d_vector) {
 	return true;
 }
 
-
-
 template<typename real_t>
 bool equals(real_t& lhs, real_t& rhs, const uint32_t threshold = 0) {
 	return lhs == rhs;
 }
 
-static bool equals(half& lhs, half& rhs, const uint32_t threshold = 0) {
+
+static bool equals(half& lhs, half& rhs, const uint16_t threshold = 0) {
 	return float(lhs) == float(rhs);
 }
+
 
 static std::ostream& operator<<(std::ostream& os, half &rhs) {
 	os << float(rhs);
@@ -122,26 +124,39 @@ static float fabs(half h) {
 	return fabs(float(h));
 }
 
-// static bool equals(float& lhs, double& rhs, const uint32_t threshold) {
-// 	assert(sizeof(float) == sizeof(uint32_t));
+static bool equals_dmr(half& lhs, half& rhs, const uint16_t threshold) {
+	assert(sizeof(half) == sizeof(uint16_t));
 
-// 	float rhs_float = float(rhs);
+	// half rhs_float = float(rhs);
 
-// 	uint32_t lhs_data;
-// 	uint32_t rhs_data;
-// 	memcpy(&lhs_data, &lhs, sizeof(uint32_t));
-// 	memcpy(&rhs_data, &rhs_float, sizeof(uint32_t));
-// 	auto diff = SUB_ABS(lhs_data, rhs_data);
+	uint16_t lhs_data;
+	uint16_t rhs_data;
+	memcpy(&lhs_data, &lhs, sizeof(uint16_t));
+	memcpy(&rhs_data, &rhs, sizeof(uint16_t));
+	auto diff = SUB_ABS(lhs_data, rhs_data);
 
-// 	return (diff <= threshold);
-// }
+	return (diff <= threshold);
+}
+
+static uint16_t diff_dmr(half& lhs, half& rhs, const uint16_t threshold) {
+	assert(sizeof(half) == sizeof(uint16_t));
+
+	// half rhs_float = float(rhs);
+
+	uint16_t lhs_data;
+	uint16_t rhs_data;
+	memcpy(&lhs_data, &lhs, sizeof(uint16_t));
+	memcpy(&rhs_data, &rhs, sizeof(uint16_t));
+	auto diff = SUB_ABS(lhs_data, rhs_data);
+
+	return diff;
+}
 
 
-// template<class half_t, class real_t>
 std::pair<int, int> check_output_errors_dmr(std::vector<half>& gold,
 		std::vector<half>& real_vector, std::vector<half>& half_vector,
-		Parameters& parameter, const uint32_t threshold, const bool dmr) {
-	uint32_t host_errors = 0;
+		Parameters& parameter, const uint16_t threshold, const bool dmr) {
+	uint16_t host_errors = 0;
 
 	
 
@@ -154,8 +169,9 @@ std::pair<int, int> check_output_errors_dmr(std::vector<half>& gold,
 		half half_precision = (dmr == true) ? half_vector[i] : real_vector[i];
 
 		//Check if DMR is OK
-		
-		// bool dmr_equals = equals(half_precision, full_precision, threshold);
+
+		bool dmr_equals = equals_dmr(half_precision, full_precision, threshold);
+		bool sub_abs = diff_dmr(half_precision, full_precision, threshold);
 
 
 		//Is output corrupted
@@ -175,11 +191,13 @@ std::pair<int, int> check_output_errors_dmr(std::vector<half>& gold,
 			error_detail << ", e: " << gold_value << " smaller_precision: "
 					<< half_precision ;
 
-			// if (parameter.verbose && (host_errors < 10)) {
-			// 	std::cout << error_detail.str() << std::endl;
+			
+			
+			if (host_errors < 10) {
+				std::cout << error_detail.str() << std::endl;
 
-			// 	std::cout << is_output_diff << " " << !dmr_equals << std::endl;
-			// }
+				std::cout << is_output_diff << " " << !dmr_equals << std::endl;
+			}
 
 			parameter.log_error(error_detail.str());
 			host_errors++;	
@@ -188,16 +206,32 @@ std::pair<int, int> check_output_errors_dmr(std::vector<half>& gold,
 		}
 #endif
 		}
+
+	}
+	if (!dmr_equals){
+		std::stringstream error_detail("");
+		std::stringstream error_detail("");
+			error_detail << std::setprecision(20) << std::scientific;
+			error_detail << "detected_dmr_errors: " ;
+			error_detail << "p: [" << int(floor(i / gold.size())) << ", "
+					<< i % gold.size() << "], TENSOR: ";
+			error_detail << full_precision;
+			error_detail << ", MXM: " << half_precision << " SUB_ABS: " << sub_abs << std::endl;
+
+
+
 	}
 
-	// auto dmr_err = dmr_errors();
 	auto dmr_err = 0;
+	// auto dmr_err = dmr_errors();
 
-	if (dmr_err != 0) {
-		std::string error_detail;
-		error_detail = "detected_dmr_errors: " + std::to_string(dmr_err);
-		parameter.log_info(error_detail);
-	}
+	
+	
+	// if (dmr_err != 0) {
+	// 	std::string error_detail;
+	// 	error_detail = "detected_dmr_errors: " + std::to_string(dmr_err);
+	// 	parameter.log_info(error_detail);
+	// }
 
 	parameter.update_error_count(host_errors);
 	if (host_errors != 0)
@@ -205,5 +239,6 @@ std::pair<int, int> check_output_errors_dmr(std::vector<half>& gold,
 
 	return {dmr_err, host_errors};
 }
+
 
 #endif /* COMMON_TEMPLATE_FUNCTIONS_H_ */
