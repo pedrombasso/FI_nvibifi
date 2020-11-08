@@ -47,9 +47,9 @@
 
 // GEMM configuration.
 
-#define M_TILES 32 //16 //256 //512 // 128 for 2k,256, 512 for 8k etc 
-#define N_TILES 32 //16 //256 //512 //
-#define K_TILES 32 //16 //256 //512 //
+#define M_TILES 16 //256 //512 // 128 for 2k,256, 512 for 8k etc 
+#define N_TILES 16 //256 //512 //
+#define K_TILES 16 //256 //512 //
 
 
 #define M_GLOBAL (M * M_TILES)
@@ -113,14 +113,15 @@
 // "half" elements is chosen as the minimum possible shift because we must keep
 // each row and column 128-bit aligned, as required by
 // nvcuda::wmma::load_matrix_sync.
-#define SKEW_HALF 8
+// #define SKEW_HALF 8
+#define SKEW_HALF 16
 
 
 
 //generete gold 
-#define GOLD 1
+#define GOLD 0
 
-#define DMR 0
+#define DMR 1
 
 #define CHAR_CAST(x) (reinterpret_cast<char*>(x))
 #define SUB_ABS(lhs, rhs) ((lhs > rhs) ? (lhs - rhs) : (rhs - lhs))
@@ -151,14 +152,21 @@ __global__ void compute_gemm(const half *A, const half *B, const half *C,
     const size_t shmem_idx_b_off = BLOCK_COL_TILES * M;
 
     // This pointer is used to access the C and D matrix tiles this warp computes.
-    half *shmem_warp_tile_ptr = (half *) &shmem[0][0]
-            + (warpId / 2) * SHMEM_STRIDE * K * 2+
-            (warpId % 2) * SHMEM_OFFSET;
+    // half *shmem_warp_tile_ptr = (half *) &shmem[0][0]
+    //         + (warpId / 2) * SHMEM_STRIDE * K * 2+
+    //         (warpId % 2) * SHMEM_OFFSET;
 
+    half *shmem_warp_tile_ptr = (half *) &shmem[0][0]
+                + (warpId / BLOCK_ROW_WARPS) * SHMEM_STRIDE * N * BLOCK_ROW_WARPS + 
+                (warpId % BLOCK_ROW_WARPS) * SHMEM_OFFSET;
+           
     // This pointer is used to stream the C and D matrices block-wide tile to and
     // from shared memory.
+    // half *shmem_warp_stream_ptr = (half *) &shmem[0][0]
+    //         + warpId * SHMEM_STRIDE * K;
+
     half *shmem_warp_stream_ptr = (half *) &shmem[0][0]
-            + warpId * SHMEM_STRIDE * K;
+            + warpId * SHMEM_STRIDE * N;
 
     // Adjust the beta scaler, as it'll be multiplied by alpha at the end of
     // each tile computation. Technically this is not generally correct (may
@@ -232,11 +240,15 @@ __global__ void compute_gemm(const half *A, const half *B, const half *C,
 
         // Select what warp copies what matrix to shared memory.
         // Warps 0-3 copy the A matrix, warps 4-7 copy the B matrix.
+        // const half *warp_ptr =
+        //         (warpId < 4) ? (&A[block_tile_i * M * K_GLOBAL] +
+        //         M * K_GLOBAL * (warpId % 4) * 2) :
+        //                         (&B[block_tile_j * N * K_GLOBAL] +
+        //                         N * K_GLOBAL * (warpId % 4) * 2);
+
         const half *warp_ptr =
-                (warpId < 4) ? (&A[block_tile_i * M * K_GLOBAL] +
-                M * K_GLOBAL * (warpId % 4) * 2) :
-                                (&B[block_tile_j * N * K_GLOBAL] +
-                                N * K_GLOBAL * (warpId % 4) * 2);
+                (warpId < (WARPS_PER_BLOCK/2)) ? (&A[block_tile_i * M * K_GLOBAL] + M * K_GLOBAL * (warpId % (WARPS_PER_BLOCK/2)) * 2) :
+                        (&B[block_tile_j * N * K_GLOBAL] + N * K_GLOBAL * (warpId % (WARPS_PER_BLOCK/2)) * 2);
 
         // Go through the global K dimension by a fixed step at a time.
 #pragma unroll
@@ -252,9 +264,11 @@ __global__ void compute_gemm(const half *A, const half *B, const half *C,
 
             // First half of the warp copies the first row / column of the matrix,
             // the second half of the warp copies the next.
-            int4 *lane_ptr = (int4 *) (warp_ptr + tile_k * K
-                    + (laneId / CHUNK_COPY_LINE_LANES) * K_GLOBAL)
-                    + (laneId % CHUNK_COPY_LINE_LANES);
+            // int4 *lane_ptr = (int4 *) (warp_ptr + tile_k * K
+            //         + (laneId / CHUNK_COPY_LINE_LANES) * K_GLOBAL)
+            //         + (laneId % CHUNK_COPY_LINE_LANES);
+
+            const half *lane_ptr = (warp_ptr + tile_k * K + (laneId / CHUNK_COPY_LINE_LANES) * K_GLOBAL);  
 
             // Shift the second half of the warp to the next row / column in the
             // shared memory.
@@ -543,7 +557,7 @@ int main(int argc, char **argv){
         auto errors = std::pair<int, int>();
         errors = check_output_errors_dmr(gold_host,d_host,
                 d2_host, parameters, threshold,
-               0);
+               DMR);
         } else {
             printf("gold was not found, exiting....\n");
         } 

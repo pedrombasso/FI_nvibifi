@@ -127,8 +127,6 @@ static float fabs(half h) {
 static bool equals_dmr(half& lhs, half& rhs, const uint16_t threshold) {
 	assert(sizeof(half) == sizeof(uint16_t));
 
-	// half rhs_float = float(rhs);
-
 	uint16_t lhs_data;
 	uint16_t rhs_data;
 	memcpy(&lhs_data, &lhs, sizeof(uint16_t));
@@ -140,8 +138,6 @@ static bool equals_dmr(half& lhs, half& rhs, const uint16_t threshold) {
 
 static uint16_t diff_dmr(half& lhs, half& rhs, const uint16_t threshold) {
 	assert(sizeof(half) == sizeof(uint16_t));
-
-	// half rhs_float = float(rhs);
 
 	uint16_t lhs_data;
 	uint16_t rhs_data;
@@ -158,7 +154,11 @@ std::pair<int, int> check_output_errors_dmr(std::vector<half>& gold,
 		Parameters& parameter, const uint16_t threshold, const bool dmr) {
 	uint16_t host_errors = 0;
 
-	
+		//forcing dmr error 
+		half_vector[2] = 2.0;
+		std::cout << "threshold == " << threshold << std::endl; 
+		std::cout << equals_dmr(real_vector[2], half_vector[2], threshold) << std::endl; 
+		std::cout << diff_dmr(real_vector[2], half_vector[2], threshold) << std::endl; 
 
 #ifdef OMP
 #pragma omp parallel for shared(host_errors)
@@ -206,8 +206,7 @@ std::pair<int, int> check_output_errors_dmr(std::vector<half>& gold,
 			}
 #endif
 		}
-
-		if (!dmr_equals){
+		if (!equals_dmr(half_precision, full_precision, threshold)){
 #ifdef OMP
 #pragma omp critical
 			{
@@ -218,7 +217,8 @@ std::pair<int, int> check_output_errors_dmr(std::vector<half>& gold,
 			error_detail << "p: [" << int(floor(i / gold.size())) << ", "
 					<< i % gold.size() << "], TENSOR: ";
 			error_detail << full_precision;
-			error_detail << ", MXM: " << half_precision << " SUB_ABS: " << sub_abs << std::endl;				
+			error_detail << ", MXM: " << half_precision << " SUB_ABS: " << sub_abs << std::endl;
+			parameter.log_error(error_detail.str());				
 			
 
 #ifdef OMP
